@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
 
@@ -33,8 +34,20 @@ public class ApplicationWebSecurityConfiguration extends WebSecurityConfigurerAd
                 .mvcMatchers("/.well-known/jwks.json").permitAll()
                 .anyRequest().authenticated()
                 .and()
-                .exceptionHandling()
-                .accessDeniedHandler(this::getAccessDeniedHandler);
+//                .exceptionHandling()
+//                    .authenticationEntryPoint(this::getAuthenticationEntryPoint)
+//                    .accessDeniedHandler(this::getAccessDeniedHandler)
+        ;
+    }
+
+    private void getAuthenticationEntryPoint(HttpServletRequest httpServletRequest,
+                                             HttpServletResponse response,
+                                             AuthenticationException e) throws JsonProcessingException {
+        ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
+        System.out.println("-----------------------------");
+        System.out.println("-------getAuthenticationEntryPoint-----");
+        System.out.println(writer.writeValueAsString(e));
+        System.out.println("-----------------------------");
     }
 
     private void getAccessDeniedHandler(HttpServletRequest request,
@@ -63,22 +76,5 @@ public class ApplicationWebSecurityConfiguration extends WebSecurityConfigurerAd
                 .password(passwordEncoder.encode("nimda"))
                 .roles("ADMIN");
     }
-
-//    @Bean
-//    @Override
-//    public UserDetailsService userDetailsService() {
-//        UserDetails user1 = User.builder()
-//                .username("user")
-//                .password(passwordEncoder.encode("pass"))
-//                .roles("USER")
-//                .build();
-//        UserDetails user2 = User.builder()
-//                .username("admin")
-//                .password(passwordEncoder.encode("nimda"))
-//                .roles("ADMIN")
-//                .build();
-//        return new InMemoryUserDetailsManager(user1, user2);
-//    }
-
 
 }

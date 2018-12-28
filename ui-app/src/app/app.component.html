@@ -1,0 +1,28 @@
+<nav class="navbar navbar-light" style="background-color: #dddddd;">
+  <div class="container">
+    <a class="navbar-brand ">Spring Security OAuth2</a>
+    <form class="form-inline" [formGroup]="loginForm">
+      <input class="form-control mr-sm-1"
+             type="text"
+             placeholder="Username"
+             aria-label="username"
+             formControlName="username">
+      <input class="form-control mr-sm-1"
+             type="password"
+             placeholder="Password"
+             aria-label="password"
+             formControlName="password">
+      <button class="btn btn-sm btn-outline-success" type="button" (click)="onLogin()">Login</button>
+    </form>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Content here -->
+  <br>
+  <div class="row align-middle">
+    <div class="col">
+      <span class="align-middle">Hello</span>
+    </div>
+  </div>
+</div>

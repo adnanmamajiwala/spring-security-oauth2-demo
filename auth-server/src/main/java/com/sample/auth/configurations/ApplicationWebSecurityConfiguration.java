@@ -1,23 +1,20 @@
 package com.sample.auth.configurations;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
+import org.springframework.security.oauth2.provider.token.DefaultUserAuthenticationConverter;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Configuration
 @RequiredArgsConstructor
@@ -30,33 +27,9 @@ public class ApplicationWebSecurityConfiguration extends WebSecurityConfigurerAd
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers(HttpMethod.OPTIONS, "/oauth/token").permitAll()
+//                .antMatchers(HttpMethod.OPTIONS, "/oauth/token").permitAll()
                 .mvcMatchers("/.well-known/jwks.json").permitAll()
-                .anyRequest().authenticated()
-                .and()
-//                .exceptionHandling()
-//                    .authenticationEntryPoint(this::getAuthenticationEntryPoint)
-//                    .accessDeniedHandler(this::getAccessDeniedHandler)
-        ;
-    }
-
-    private void getAuthenticationEntryPoint(HttpServletRequest httpServletRequest,
-                                             HttpServletResponse response,
-                                             AuthenticationException e) throws JsonProcessingException {
-        ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
-        System.out.println("-----------------------------");
-        System.out.println("-------getAuthenticationEntryPoint-----");
-        System.out.println(writer.writeValueAsString(e));
-        System.out.println("-----------------------------");
-    }
-
-    private void getAccessDeniedHandler(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        AccessDeniedException exception) throws JsonProcessingException {
-        ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
-        System.out.println("-----------------------------");
-        System.out.println(writer.writeValueAsString(exception));
-        System.out.println("-----------------------------");
+                .anyRequest().authenticated();
     }
 
     @Bean
@@ -77,4 +50,16 @@ public class ApplicationWebSecurityConfiguration extends WebSecurityConfigurerAd
                 .roles("ADMIN");
     }
 
+    public static class CustomTokenConverter extends DefaultUserAuthenticationConverter {
+
+        @Override
+        public Map<String, ?> convertUserAuthentication(Authentication authentication) {
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("sub", authentication.getName());
+            if (authentication.getAuthorities() != null && !authentication.getAuthorities().isEmpty()) {
+                response.put(AUTHORITIES, AuthorityUtils.authorityListToSet(authentication.getAuthorities()));
+            }
+            return response;
+        }
+    }
 }

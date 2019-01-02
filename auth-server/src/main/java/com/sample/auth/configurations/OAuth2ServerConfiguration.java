@@ -1,24 +1,20 @@
 package com.sample.auth.configurations;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
-import org.springframework.security.oauth2.provider.AuthorizationRequest;
-import org.springframework.security.oauth2.provider.ClientDetails;
-import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
-import org.springframework.security.oauth2.provider.TokenRequest;
-import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.DefaultAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
+import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
+
+import java.security.KeyPair;
 
 @Configuration
 @EnableAuthorizationServer
@@ -27,8 +23,8 @@ public class OAuth2ServerConfiguration extends AuthorizationServerConfigurerAdap
 
     private final AuthenticationManager authenticationManager;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final TokenStore tokenStore;
-    private final JwtAccessTokenConverter jwtAccessTokenConverter;
+    private final KeyPair keyPair;
+    private final OAuthExceptionBuilder exceptionBuilder;
 
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
@@ -51,30 +47,29 @@ public class OAuth2ServerConfiguration extends AuthorizationServerConfigurerAdap
 
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) {
-        // @formatter:off
-		endpoints
-			.authenticationManager(this.authenticationManager)
-			.accessTokenConverter(jwtAccessTokenConverter)
-			.tokenStore(tokenStore)
-//            .exceptionTranslator(this::oAuth2ExceptionResponseEntity)
-            ;
-		// @formatter:on
+        JwtAccessTokenConverter accessTokenConverter = jwtAccessTokenConverter();
+        endpoints
+                .authenticationManager(this.authenticationManager)
+                .accessTokenConverter(accessTokenConverter)
+                .tokenStore(new JwtTokenStore(accessTokenConverter))
+                .exceptionTranslator(this::oAuth2ExceptionResponseEntity);
     }
 
     private ResponseEntity<OAuth2Exception> oAuth2ExceptionResponseEntity(Exception e) throws Exception {
-        ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
-        System.out.println("-----------------------------");
-        System.out.println(writer.writeValueAsString(e));
-        System.out.println("-----------------------------");
-        if (e instanceof OAuth2Exception) {
-            OAuth2Exception oAuth2Exception = (OAuth2Exception) e;
-            return ResponseEntity
-                    .status(oAuth2Exception.getHttpErrorCode())
-                    .body(new CustomOAuth2Exception(oAuth2Exception.getMessage()));
-        } else {
-            throw e;
-        }
+        OAuth2Exception oAuth2Exception = exceptionBuilder.build(e);
+        return ResponseEntity
+                .status(oAuth2Exception.getHttpErrorCode())
+                .body(oAuth2Exception);
     }
 
+    public JwtAccessTokenConverter jwtAccessTokenConverter() {
+        JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
+        converter.setKeyPair(keyPair);
+
+        DefaultAccessTokenConverter accessTokenConverter = new DefaultAccessTokenConverter();
+        accessTokenConverter.setUserTokenConverter(new ApplicationWebSecurityConfiguration.CustomTokenConverter());
+        converter.setAccessTokenConverter(accessTokenConverter);
+        return converter;
+    }
 
 }

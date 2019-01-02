@@ -1,12 +1,9 @@
 package com.sample.auth;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.provider.endpoint.FrameworkEndpoint;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -24,7 +21,6 @@ public class AuthServerEndpoint {
     @GetMapping("/user")
     @ResponseBody
     public Principal user(Principal user) {
-        System.out.println("Inside get USER --------");
         return user;
     }
 
@@ -36,12 +32,4 @@ public class AuthServerEndpoint {
         return new JWKSet(key).toJSONObject();
     }
 
-    @ExceptionHandler(value = Throwable.class)
-    public void handle(Throwable t) throws Exception{
-        ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
-
-        System.out.println("-----------------------------");
-        System.out.println(writer.writeValueAsString(t));
-        System.out.println("-----------------------------");
-    }
 }

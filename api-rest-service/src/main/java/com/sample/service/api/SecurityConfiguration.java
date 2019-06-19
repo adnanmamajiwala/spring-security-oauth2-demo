@@ -9,11 +9,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.AuthenticationException;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.PrintWriter;
-
-import static com.sample.service.api.AuthErrorResponse.create;
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -33,26 +28,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .authenticated()
         .and()
             .oauth2ResourceServer()
-                .authenticationEntryPoint((httpServletRequest,httpServletResponse,e) -> {
-                    log.debug("Inside custom authentication entry point {}", e);
-                    sendResponse(httpServletResponse , e);
-                 })
                 .jwt();
 			// @formatter:on
-    }
-
-    private void sendResponse(HttpServletResponse httpServletResponse, AuthenticationException e) {
-        httpServletResponse.setContentType("application/json");
-        httpServletResponse.setCharacterEncoding("UTF-8");
-        httpServletResponse.setStatus(401);
-
-        try {
-            PrintWriter out = httpServletResponse.getWriter();
-            out.print(objectMapper.writeValueAsString(create(e)));
-            out.flush();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
     }
 
 }
